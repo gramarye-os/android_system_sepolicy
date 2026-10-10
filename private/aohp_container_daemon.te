@@ -301,3 +301,11 @@ allow aohp_container_daemon self:process ptrace;
 # strace reads /proc/sys/kernel/pid_max; dconf-service and others read /proc/cmdline.
 allow aohp_container_daemon proc_pid_max:file r_file_perms;
 allow aohp_container_daemon proc_cmdline:file r_file_perms;
+
+# ---- interface configuration ioctls (build-21) ----------------------------------------------------
+# With TUNSETIFF allowed, tailscaled got as far as 'failed to set MTU of TUN device: permission
+# denied': SIOCSIFMTU (0x8922) is issued on an AF_INET UDP socket and private/domain.te limits every
+# domain to unpriv_sock_ioctls on its sockets. wireguard-go / tailscaled / ifconfig / wg-quick
+# configure interfaces through these (SIOCSIFMTU, SIOCSIFFLAGS, SIOCSIFADDR, SIOCSIFNETMASK ...).
+# Same grant netd has.
+allowxperm aohp_container_daemon self:{ udp_socket tcp_socket rawip_socket } ioctl priv_sock_ioctls;
