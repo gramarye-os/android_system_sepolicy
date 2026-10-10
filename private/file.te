@@ -287,3 +287,5 @@ type zygote_next_socket, file_type, coredomain_socket;
 # AOHP containerd control socket (coredomain-only; private so it does not extend the
 # frozen 202504 vendor API surface - see sepolicy_freeze_test)
 type aohp_container_socket, file_type, coredomain_socket;
+# AOHP: /proc/sysvipc (ipcs) — private so it needs no compat mapping / freeze update.
+type proc_sysvipc, fs_type, proc_type;

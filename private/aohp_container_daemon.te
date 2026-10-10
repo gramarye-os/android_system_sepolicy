@@ -266,3 +266,38 @@ allow aohp_container_daemon mnt_expand_file:dir getattr;
 get_prop(aohp_container_daemon, qemu_sf_lcd_density_prop)
 # (framework Resources init also stats /vendor/overlay and /odm/overlay; vendor_overlay_file is
 #  neverallowed to coredomain. The failed stat is harmless and stays denied.)
+
+# ---- SysV IPC (build-20) -------------------------------------------------------------------------
+# The kernel now has CONFIG_SYSVIPC (vendor/oplus/aohp.config); private/domain.te exempts this
+# domain from the global neverallow. Objects live in the env's own ipc namespace.
+allow aohp_container_daemon self:sem create_ipc_perms;
+allow aohp_container_daemon self:shm { create_ipc_perms lock };
+allow aohp_container_daemon self:msgq { create_ipc_perms enqueue };
+allow aohp_container_daemon self:msg { send receive };
+# ipcs(1): /proc/sysvipc/{sem,shm,msg} (labeled proc_sysvipc so the coredomain proc:file
+# neverallow does not apply) and the IPC_INFO / SEM_INFO / SHM_INFO / MSG_INFO ctl commands.
+allow aohp_container_daemon proc_sysvipc:dir r_dir_perms;
+allow aohp_container_daemon proc_sysvipc:file r_file_perms;
+allow aohp_container_daemon kernel:system ipc_info;
+
+# ---- TUN (build-20) --------------------------------------------------------------------------------
+# chr_file rw_file_perms (above) already includes ioctl, but private/domain.te carries
+# 'allowxperm domain tun_device:chr_file ioctl { FIOCLEX FIONCLEX }', and once any xperm rule
+# matches only the listed ioctls pass: TUNSETIFF (0x54ca) was denied with EACCES. Same set as
+# system_server/network_stack plus the offload/vnet-header ioctls wireguard-go and tailscaled
+# probe for GSO, and persist/queue for 'ip tuntap'.
+allowxperm aohp_container_daemon tun_device:chr_file ioctl {
+  TUNGETIFF TUNSETIFF TUNSETLINK TUNSETCARRIER TUNSETPERSIST TUNSETOWNER TUNSETGROUP
+  TUNSETOFFLOAD TUNSETVNETHDRSZ TUNGETVNETHDRSZ TUNGETFEATURES TUNSETQUEUE TUNSETIFINDEX
+  TUNSETSNDBUF TUNGETSNDBUF TUNSETVNETLE TUNGETVNETLE
+};
+
+# ---- tooling (build-20) ----------------------------------------------------------------------------
+# netstat/ss read /proc/net/{tcp,udp,...} (proc_net_tcp_udp is not proc_net_type).
+allow aohp_container_daemon proc_net_tcp_udp:file r_file_perms;
+# strace/gdb of the env's own processes: same domain, so only self:process ptrace is needed
+# (CAP_SYS_PTRACE stays neverallowed; ptrace across uids / non-dumpable targets still fails).
+allow aohp_container_daemon self:process ptrace;
+# strace reads /proc/sys/kernel/pid_max; dconf-service and others read /proc/cmdline.
+allow aohp_container_daemon proc_pid_max:file r_file_perms;
+allow aohp_container_daemon proc_cmdline:file r_file_perms;

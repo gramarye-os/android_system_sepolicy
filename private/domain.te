@@ -1357,7 +1357,10 @@ neverallow { domain -init -system_server } heapdump_data_file:file read;
 # that, even assuming only non-buggy and non-malicious code, it is very likely
 # that over time, the kernel global tables used to implement SysV IPCs will fill
 # up.
-neverallow * *:{ shm sem msg msgq } *;
+# AOHP: the Linux env runs ordinary software (Steam's tier0, PostgreSQL, RMDS-style daemons)
+# that uses SysV IPC; its kernel enables CONFIG_SYSVIPC and the container has its own ipc
+# namespace, so objects die with the env rather than accumulating in the global tables.
+neverallow { domain -aohp_container_daemon } *:{ shm sem msg msgq } *;
 
 # Do not mount on top of symlinks, fifos, or sockets.
 # Feature parity with Chromium LSM.

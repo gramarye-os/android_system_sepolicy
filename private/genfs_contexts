@@ -63,6 +63,7 @@ genfscon proc /sys/kernel/perf_event_paranoid u:object_r:proc_perf:s0
 genfscon proc /sys/kernel/perf_cpu_time_max_percent u:object_r:proc_perf:s0
 genfscon proc /sys/kernel/perf_event_mlock_kb u:object_r:proc_perf:s0
 genfscon proc /sys/kernel/pid_max u:object_r:proc_pid_max:s0
+genfscon proc /sysvipc u:object_r:proc_sysvipc:s0
 genfscon proc /sys/kernel/poweroff_cmd u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/random u:object_r:proc_random:s0
 genfscon proc /sys/kernel/randomize_va_space u:object_r:proc_security:s0
