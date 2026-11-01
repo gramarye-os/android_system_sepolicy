@@ -1,0 +1,4 @@
+# aohp-containerd: the AOHP environment supervisor (system/core/aohp-containerd). Rules live in
+# private/aohp_container_daemon.te; the type is public so vendor policy can reference it
+# (vendor/aohp/sepolicy/vendor: Hexagon FastRPC for HostExec= llama-server units).
+type aohp_container_daemon, domain;

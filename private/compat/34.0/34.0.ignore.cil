@@ -5,6 +5,7 @@
 (typeattribute new_objects)
 (typeattributeset new_objects
   ( new_objects
+    aohp_container_daemon
     archive_service
     artd_pre_reboot_service
     contextual_search_service

@@ -5,6 +5,7 @@
 (typeattribute new_objects)
 (typeattributeset new_objects
   ( new_objects
+    aohp_container_daemon
     app_function_service
     binderfs_logs_transaction_history
     binderfs_logs_transactions

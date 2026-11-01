@@ -6,7 +6,10 @@
 # mlstrustedsubject: read-only probing of app processes (/proc/<pid>/stat of an
 # untrusted_app at s0:c512,c768) is otherwise refused by the MLS dominance constraint even
 # with the type-enforcement rules below; same attribute storaged/lmkd/dumpstate carry.
-type aohp_container_daemon, domain, coredomain, mlstrustedsubject;
+# The domain type itself is public (public/aohp_container_daemon.te) so vendor policy can grant it
+# SoC-specific access - the Hexagon FastRPC nodes for the Driver-shipped llama-server (vendor/aohp/sepolicy).
+typeattribute aohp_container_daemon coredomain;
+typeattribute aohp_container_daemon mlstrustedsubject;
 type aohp_container_daemon_exec, exec_type, file_type, system_file_type;
 type aohp_container_data_file, file_type, data_file_type, core_data_file_type;
 
