@@ -663,6 +663,7 @@ neverallow {
   -ueventd
   -vold
   -recovery
+  -aohp_container_daemon # OCI runtimes in the env create device nodes in a container rootfs
 } self:global_capability_class_set mknod;
 
 # No process can map low memory (< CONFIG_LSM_MMAP_MIN_ADDR).
@@ -746,7 +747,7 @@ neverallow { domain -kernel -init -recovery } block_device:blk_file { open read 
 # Do not allow renaming of block files or character files
 # Ability to do so can lead to possible use in an exploit chain
 # e.g. https://googleprojectzero.blogspot.com/2016/12/chrome-os-exploit-one-byte-overflow-and.html
-neverallow { domain userdebug_or_eng(`-overlay_remounter') } *:{ blk_file chr_file } rename;
+neverallow { domain userdebug_or_eng(`-overlay_remounter') -aohp_container_daemon } *:{ blk_file chr_file } rename; # overlayfs whiteouts (0:0 chr_file) in container image storage
 
 # Don't allow raw read/write/open access to generic devices.
 # Rather force a relabel to a more specific type.
