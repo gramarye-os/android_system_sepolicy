@@ -345,6 +345,8 @@ allow aohp_container_daemon self:fifo_file setattr;
 allow aohp_container_daemon proc_cgroups:file r_file_perms;
 # crun loads the device-cgroup BPF program for cgroup v2.
 allow aohp_container_daemon self:bpf { prog_load prog_run map_create map_read map_write };
-# netavark: veth pairs and nftables rules for the bridge network.
-allow aohp_container_daemon self:netlink_route_socket create_socket_perms;
-allow aohp_container_daemon self:netlink_netfilter_socket create_socket_perms;
+# netavark: veth pairs and nftables rules for the bridge network. Socket ioctls must be
+# allowlisted (domain.te): create_socket_perms minus ioctl, plus the interface flag ioctls.
+allow aohp_container_daemon self:netlink_route_socket { create bind read write getattr setattr getopt setopt nlmsg_read nlmsg_write };
+allow aohp_container_daemon self:netlink_netfilter_socket { create bind read write getattr setattr getopt setopt nlmsg_read nlmsg_write ioctl };
+allowxperm aohp_container_daemon self:netlink_netfilter_socket ioctl { SIOCGIFFLAGS SIOCSIFFLAGS SIOCGIFINDEX SIOCGIFNAME };
