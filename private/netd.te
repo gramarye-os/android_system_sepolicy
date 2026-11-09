@@ -172,6 +172,8 @@ neverallow netd system_file_type:dir_file_class_set write;
 neverallow netd { app_data_file_type system_data_file }:dir_file_class_set write;
 
 # only system_server, dumpstate and network stack app may find netd service
+# (AOHP: aohp_container_daemon registers container bridges with netd through ndc, the same INetd
+# calls tethering makes; see system/core/aohp-containerd/bridge_net.cpp)
 neverallow {
     domain
     -system_server
@@ -179,6 +181,7 @@ neverallow {
     -network_stack
     -netd
     -netutils_wrapper
+    -aohp_container_daemon
 } netd_service:service_manager find;
 
 # only system_server, dumpstate and network stack app may find dnsresolver service
