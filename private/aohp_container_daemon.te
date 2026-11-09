@@ -423,3 +423,15 @@ allowxperm aohp_container_daemon self:netlink_generic_socket ioctl { SIOCGIFINDE
 allow aohp_container_daemon system_file:file execute_no_trans;
 allow aohp_container_daemon netd_service:service_manager find;
 binder_call(aohp_container_daemon, netd)
+
+# Round 8 (cred32, 2026-11-09): /run is a tmpfs now, so podman's /run/netns/<id> placeholder files
+# carry aohp_container_daemon_tmpfs instead of aohp_container_data_file and the nsfs bind onto them
+# needs mounton on that type (the cause of "failed to bind mount ns ... permission denied").
+# tcpdump: libpcap walks /sys/class/net and issues SIOCGIFINDEX/SIOCGIFHWADDR on its packet socket.
+# bridge-net: ndc also looks up the dnsresolver service on the way to netd.
+allow aohp_container_daemon aohp_container_daemon_tmpfs:file mounton;
+allow aohp_container_daemon tmpfs:file mounton;
+allow aohp_container_daemon sysfs_net:dir search;
+allow aohp_container_daemon sysfs_net:file r_file_perms;
+allowxperm aohp_container_daemon self:packet_socket ioctl { SIOCGIFINDEX SIOCGIFNAME SIOCGIFFLAGS SIOCGIFHWADDR SIOCGIFMTU SIOCETHTOOL };
+allow aohp_container_daemon dnsresolver_service:service_manager find;

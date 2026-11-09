@@ -185,6 +185,7 @@ neverallow {
 } netd_service:service_manager find;
 
 # only system_server, dumpstate and network stack app may find dnsresolver service
+# (AOHP: ndc run by aohp_container_daemon looks this up too, see netd_service above)
 neverallow {
     domain
     -system_server
@@ -192,6 +193,7 @@ neverallow {
     -network_stack
     -netd
     -netutils_wrapper
+    -aohp_container_daemon
 } dnsresolver_service:service_manager find;
 
 # only system_server, dumpstate and network stack app may find mdns service
