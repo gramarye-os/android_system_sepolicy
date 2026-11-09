@@ -348,5 +348,5 @@ allow aohp_container_daemon self:bpf { prog_load prog_run map_create map_read ma
 # netavark: veth pairs and nftables rules for the bridge network. Socket ioctls must be
 # allowlisted (domain.te): create_socket_perms minus ioctl, plus the interface flag ioctls.
 allow aohp_container_daemon self:netlink_route_socket { create bind read write getattr setattr getopt setopt nlmsg_read nlmsg_write };
-allow aohp_container_daemon self:netlink_netfilter_socket { create bind read write getattr setattr getopt setopt nlmsg_read nlmsg_write ioctl };
+allow aohp_container_daemon self:netlink_netfilter_socket { create bind read write getattr setattr getopt setopt ioctl };
 allowxperm aohp_container_daemon self:netlink_netfilter_socket ioctl { SIOCGIFFLAGS SIOCSIFFLAGS SIOCGIFINDEX SIOCGIFNAME };
