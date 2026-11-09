@@ -435,3 +435,10 @@ allow aohp_container_daemon sysfs_net:dir search;
 allow aohp_container_daemon sysfs_net:file r_file_perms;
 allowxperm aohp_container_daemon self:packet_socket ioctl { SIOCGIFINDEX SIOCGIFNAME SIOCGIFFLAGS SIOCGIFHWADDR SIOCGIFMTU SIOCETHTOOL };
 allow aohp_container_daemon dnsresolver_service:service_manager find;
+
+# Round 9 (cred33, 2026-11-09): crun's exec.fifo (conmon <-> container start handshake) lives under
+# /run/crun on the tmpfs now; iptables (the Android xtables binary) stats /sys/fs/bpf on startup
+# and refuses to run without it ("Permission denied" in bridge-net's oem_fwd rules); libpcap reads
+# /proc/sys/kernel/ngroups_max. fs_bpf:dir search is granted to every domain but apps upstream.
+allow aohp_container_daemon tmpfs:fifo_file create_file_perms;
+allow aohp_container_daemon fs_bpf:dir search;
