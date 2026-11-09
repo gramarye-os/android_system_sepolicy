@@ -398,3 +398,10 @@ dontaudit aohp_container_daemon self:capability setfcap;
 # crun created on the /dev tmpfs (/dev/null for its stdio).
 allow aohp_container_daemon { proc_timer proc_sysrq }:file { getattr mounton };
 allow aohp_container_daemon tmpfs:chr_file rw_file_perms;
+
+# Round 6 (cred29, 2026-11-09): detached containers. conmon gives crun /dev/null as the container's
+# stdin and crun chowns it to the container user; iproute2 queries interface state with SIOCGIFINDEX
+# style ioctls on a datagram socket while netavark builds the veth pair.
+allow aohp_container_daemon null_device:chr_file setattr;
+allow aohp_container_daemon self:unix_dgram_socket ioctl;
+allowxperm aohp_container_daemon self:unix_dgram_socket ioctl { SIOCGIFINDEX SIOCGIFNAME SIOCGIFFLAGS SIOCGIFHWADDR SIOCGIFMTU SIOCETHTOOL };
