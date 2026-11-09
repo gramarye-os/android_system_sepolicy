@@ -392,3 +392,9 @@ allow aohp_container_daemon proc_keys:file mounton;
 # entry that triggers it is non-essential, so it is silenced instead.
 dontaudit aohp_container_daemon self:cap_userns sys_ptrace;
 dontaudit aohp_container_daemon self:capability setfcap;
+
+# Round 5 (cred28, 2026-11-09): crun masks /proc/timer_list and /proc/sysrq-trigger in the
+# container with bind mounts (stat, then mounton), and the container init opens the device nodes
+# crun created on the /dev tmpfs (/dev/null for its stdio).
+allow aohp_container_daemon { proc_timer proc_sysrq }:file { getattr mounton };
+allow aohp_container_daemon tmpfs:chr_file rw_file_perms;
