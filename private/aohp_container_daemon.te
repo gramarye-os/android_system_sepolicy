@@ -388,5 +388,7 @@ dontaudit aohp_container_daemon block_device:dir search;
 # starts with CAP_SETFCAP dropped from its bounding set) and which is neverallowed for all domains.
 allow aohp_container_daemon tmpfs:lnk_file { create read getattr unlink };
 allow aohp_container_daemon proc_keys:file mounton;
-allow aohp_container_daemon self:cap_userns sys_ptrace;
+# sys_ptrace is neverallowed in user namespaces too (domain.te); the read of a sibling's /proc
+# entry that triggers it is non-essential, so it is silenced instead.
+dontaudit aohp_container_daemon self:cap_userns sys_ptrace;
 dontaudit aohp_container_daemon self:capability setfcap;
