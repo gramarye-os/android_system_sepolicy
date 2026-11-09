@@ -380,3 +380,13 @@ allow aohp_container_daemon unlabeled:dir mounton;
 allow aohp_container_daemon self:cap_userns { chown dac_override fowner fsetid kill setgid setuid setpcap net_admin net_raw sys_chroot sys_admin mknod sys_resource };
 # util-linux mount probes /dev/block while reading the mount table.
 dontaudit aohp_container_daemon block_device:dir search;
+
+# Round 4 (cred27 enforcing + permissive, 2026-11-09). crun symlinks /dev/fd, /dev/std{in,out,err},
+# /dev/ptmx on the container's /dev tmpfs and masks /proc/keys with a bind mount; a process in a
+# user namespace reads another's /proc entries (cap_userns sys_ptrace). podman probes every
+# capability bit at start-up, including setfcap, which it does not use (verified: the container
+# starts with CAP_SETFCAP dropped from its bounding set) and which is neverallowed for all domains.
+allow aohp_container_daemon tmpfs:lnk_file { create read getattr unlink };
+allow aohp_container_daemon proc_keys:file mounton;
+allow aohp_container_daemon self:cap_userns sys_ptrace;
+dontaudit aohp_container_daemon self:capability setfcap;
