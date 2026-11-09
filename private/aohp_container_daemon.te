@@ -352,8 +352,9 @@ allow aohp_container_daemon self:netlink_netfilter_socket { create bind read wri
 allowxperm aohp_container_daemon self:netlink_netfilter_socket ioctl { SIOCGIFFLAGS SIOCSIFFLAGS SIOCGIFINDEX SIOCGIFNAME };
 
 # Round 2 (enforcing run of podman on cred25, 2026-11-09): what the runtime hit after the first set.
-# podman reads generic procfs (/proc/sys/kernel/cap_last_cap) and stats /proc/keys in the rootfs.
-allow aohp_container_daemon proc:file r_file_perms;
+# podman reads /proc/sys/kernel/cap_last_cap (labeled proc_cap_last_cap: core domains may not read
+# generic proc files) and stats /proc/keys in the container rootfs.
+allow aohp_container_daemon proc_cap_last_cap:file r_file_perms;
 allow aohp_container_daemon proc_keys:file getattr;
 # unshare(CLONE_NEWUSER) works once the env is pivot_rooted; the SELinux class gates it.
 allow aohp_container_daemon self:user_namespace create;
