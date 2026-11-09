@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     adaptive_haptics_prop
     adservices_manager_service
     apexd_select_prop

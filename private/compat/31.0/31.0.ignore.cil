@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     apexd_select_prop
     artd_service
     attestation_verification_service

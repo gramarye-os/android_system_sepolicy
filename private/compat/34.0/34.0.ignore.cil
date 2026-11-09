@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     archive_service
     artd_pre_reboot_service
     contextual_search_service

@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     aidl_lazy_test_server
     aidl_lazy_test_server_exec
     aidl_lazy_test_service

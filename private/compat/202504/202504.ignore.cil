@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     aohp_container_socket
     activity_structured_service
     gatekeeper_vendor_data_file

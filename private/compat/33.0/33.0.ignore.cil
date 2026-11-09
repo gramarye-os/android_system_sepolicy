@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     adaptive_haptics_prop
     apex_ready_prop
     art_boot

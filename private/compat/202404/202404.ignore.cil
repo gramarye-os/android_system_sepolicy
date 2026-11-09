@@ -6,6 +6,7 @@
 (typeattributeset new_objects
   ( new_objects
     aohp_container_daemon
+    proc_cap_last_cap
     app_function_service
     binderfs_logs_transaction_history
     binderfs_logs_transactions
