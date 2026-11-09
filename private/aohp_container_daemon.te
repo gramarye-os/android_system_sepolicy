@@ -368,3 +368,15 @@ allow aohp_container_daemon tmpfs:chr_file { create setattr getattr unlink link 
 # overlay remount (read-only lower) and unmount of the unlabeled image superblock.
 allow aohp_container_daemon labeledfs:filesystem remount;
 allow aohp_container_daemon unlabeled:filesystem unmount;
+
+# Round 3 (enforcing run on the round-2 image, 2026-11-09; strace of crun, no avc: these checks are
+# not audited). crun re-binds the container's /sys/fs/cgroup, /dev, /dev/pts, /dev/mqueue, /proc/*
+# and /sys read-only (MS_REMOUNT|MS_BIND: filesystem remount on each superblock) and makes the
+# cgroup mount private (MS_REC|MS_PRIVATE: mounton on the mount root).
+allow aohp_container_daemon { cgroup_v2 tmpfs devpts mqueue proc sysfs }:filesystem remount;
+allow aohp_container_daemon cgroup_v2:dir mounton;
+allow aohp_container_daemon unlabeled:dir mounton;
+# User namespaces: the capability checks inside one are the cap_userns class.
+allow aohp_container_daemon self:cap_userns { chown dac_override fowner fsetid kill setgid setuid setpcap net_admin net_raw sys_chroot sys_admin mknod sys_resource };
+# util-linux mount probes /dev/block while reading the mount table.
+dontaudit aohp_container_daemon block_device:dir search;
