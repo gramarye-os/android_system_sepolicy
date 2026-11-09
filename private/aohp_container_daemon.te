@@ -321,3 +321,29 @@ allowxperm aohp_container_daemon self:{ udp_socket tcp_socket rawip_socket } ioc
 # aohp-secrets silently fell back to the §0 configured key). read/write after connect are on the
 # daemon's own socket (self, already allowed). Nothing else of platform_app's is reachable.
 allow aohp_container_daemon platform_app:unix_stream_socket connectto;
+
+# OCI container runtimes in the env (podman + crun, 2026-11-09). Each line is an avc from a
+# permissive "podman run docker.io/library/alpine" inside a dodge env on a kernel with
+# PID/USER/IPC namespaces, cgroup device/pids and nf_tables (vendor/aohp.config).
+# crun creates /dev nodes in the container rootfs, drops caps, sets file caps, raises rlimits.
+allow aohp_container_daemon self:capability { mknod setpcap setfcap sys_resource };
+# cgroup2 instance mounted at /sys/fs/cgroup in every env; overlayfs for image layers and the
+# pivot_root of the env rootfs are both labeledfs superblocks; the old root is unmounted after it.
+allow aohp_container_daemon cgroup_v2:filesystem { mount unmount getattr };
+allow aohp_container_daemon labeledfs:filesystem { mount unmount getattr };
+allow aohp_container_daemon rootfs:filesystem unmount;
+allow aohp_container_daemon mqueue:filesystem mount;
+# Image layers extracted by the runtime carry no label.
+allow aohp_container_daemon unlabeled:dir create_dir_perms;
+allow aohp_container_daemon unlabeled:{ file lnk_file sock_file fifo_file chr_file blk_file } create_file_perms;
+allow aohp_container_daemon unlabeled:filesystem getattr;
+# Device nodes in a container rootfs under /data/aohp; bind mounts of files (hosts, resolv.conf).
+allow aohp_container_daemon aohp_container_data_file:{ chr_file blk_file } create_file_perms;
+allow aohp_container_daemon aohp_container_data_file:file mounton;
+allow aohp_container_daemon self:fifo_file setattr;
+allow aohp_container_daemon proc_cgroups:file r_file_perms;
+# crun loads the device-cgroup BPF program for cgroup v2.
+allow aohp_container_daemon self:bpf { prog_load prog_run map_create map_read map_write };
+# netavark: veth pairs and nftables rules for the bridge network.
+allow aohp_container_daemon self:netlink_route_socket create_socket_perms;
+allow aohp_container_daemon self:netlink_netfilter_socket create_socket_perms;
