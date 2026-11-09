@@ -405,3 +405,21 @@ allow aohp_container_daemon tmpfs:chr_file rw_file_perms;
 allow aohp_container_daemon null_device:chr_file setattr;
 allow aohp_container_daemon self:unix_dgram_socket ioctl;
 allowxperm aohp_container_daemon self:unix_dgram_socket ioctl { SIOCGIFINDEX SIOCGIFNAME SIOCGIFFLAGS SIOCGIFHWADDR SIOCGIFMTU SIOCETHTOOL };
+
+# Round 7 (cred31, 2026-11-09): tcpdump in the env. libpcap probes the capture interface with
+# SIOCETHTOOL/SIOCGIFNAME on a generic netlink socket and aborts when that fails, so every capture
+# under enforcing silently produced nothing (the permissive-only "no packets seen" evidence of the
+# published-port investigation was void). Same allowlist shape as the dgram socket above.
+allow aohp_container_daemon self:netlink_generic_socket ioctl;
+allowxperm aohp_container_daemon self:netlink_generic_socket ioctl { SIOCGIFINDEX SIOCGIFNAME SIOCGIFFLAGS SIOCGIFHWADDR SIOCGIFMTU SIOCETHTOOL };
+
+# Round 7b: bridge-net (aohp-containerd registers container bridges with netd, see
+# system/core/aohp-containerd/bridge_net.cpp). The daemon execs /system/bin/ndc (binder to netd:
+# local-network interface/route, ipfwd, nat - the tethering path) and /system/bin/iptables (two
+# ACCEPT rules in netd's oem_fwd chain; legacy xtables = get/setsockopt on a raw socket, granted
+# with create_socket_perms above). Both are plain system_file binaries on this build (no
+# netutils-wrapper transition for coredomain). RTNETLINK monitor + RTM_GETROUTE: netlink_route_socket
+# above. netd accepts INetd calls from uid 0.
+allow aohp_container_daemon system_file:file execute_no_trans;
+allow aohp_container_daemon netd_service:service_manager find;
+binder_call(aohp_container_daemon, netd)
