@@ -454,3 +454,9 @@ allow aohp_container_daemon fs_bpf_netd_shared:file { getattr read };
 allow aohp_container_daemon bpfloader:bpf prog_run;
 allow aohp_container_daemon aohp_container_daemon_tmpfs:file link;
 allow aohp_container_daemon self:packet_socket ioctl;
+
+# Round 11 (Saga cred36, 2026-11-09): crun masks /proc/sched_debug (a 5.10-era file, gone from 6.x
+# kernels, so the OnePlus never saw this) by stat'ing it and bind-mounting /dev/null over it inside
+# the container's /proc; under enforcing the mount failed and the init process died ("crun: read from
+# the init process"). The file is generic proc type on this kernel.
+allow aohp_container_daemon proc:file { getattr mounton };
