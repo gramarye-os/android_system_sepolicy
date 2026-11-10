@@ -466,3 +466,9 @@ allow aohp_container_daemon proc:file { getattr mounton };
 # cap_userns copy covers the same inside a user namespace.
 allow aohp_container_daemon self:capability net_bind_service;
 allow aohp_container_daemon self:cap_userns net_bind_service;
+
+# Round 13 (dodge cred37, 2026-11-09): the type_transition onto the /run tmpfs covers files and dirs
+# but not sockets, so tailscaled's /run/tailscale/tailscaled.sock came out as plain tmpfs and the
+# unit failed since the tmpfs /run landed (cred32). Same shape as the crun fifo in round 9.
+allow aohp_container_daemon tmpfs:sock_file create_file_perms;
+allow aohp_container_daemon tmpfs:lnk_file create_file_perms;
