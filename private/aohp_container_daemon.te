@@ -460,3 +460,9 @@ allow aohp_container_daemon self:packet_socket ioctl;
 # the container's /proc; under enforcing the mount failed and the init process died ("crun: read from
 # the init process"). The file is generic proc type on this kernel.
 allow aohp_container_daemon proc:file { getattr mounton };
+
+# Round 12 (2026-11-09): NET_BIND_SERVICE in the rc capabilities so services in the env can bind
+# ports below 1024 (aardvark-dns on :53 for container name resolution, sshd, web servers). The
+# cap_userns copy covers the same inside a user namespace.
+allow aohp_container_daemon self:capability net_bind_service;
+allow aohp_container_daemon self:cap_userns net_bind_service;
