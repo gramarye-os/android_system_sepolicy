@@ -442,3 +442,15 @@ allow aohp_container_daemon dnsresolver_service:service_manager find;
 # /proc/sys/kernel/ngroups_max. fs_bpf:dir search is granted to every domain but apps upstream.
 allow aohp_container_daemon tmpfs:fifo_file create_file_perms;
 allow aohp_container_daemon fs_bpf:dir search;
+
+# Round 10 (cred34, 2026-11-09): the Android iptables binary re-serialises netd's whole filter
+# table on every change, and that table carries an xt_bpf match on netd's pinned
+# prog_netd_skfilter_allowlist_xtbpf - so adding the two oem_fwd rules needs read access to the
+# shared netd BPF dir/program and prog_run (same set netutils_wrapper has). crun hardlinks the
+# compiled seccomp filter into /run/crun/.cache (tmpfs file link). tcpdump's packet socket ioctls
+# were listed in round 8 without the base ioctl grant.
+allow aohp_container_daemon fs_bpf_netd_shared:dir search;
+allow aohp_container_daemon fs_bpf_netd_shared:file { getattr read };
+allow aohp_container_daemon bpfloader:bpf prog_run;
+allow aohp_container_daemon aohp_container_daemon_tmpfs:file link;
+allow aohp_container_daemon self:packet_socket ioctl;

@@ -55,7 +55,7 @@ neverallow { domain -bpfloader                                                  
 neverallow { domain -bpfloader                                                              -network_stack                                            } fs_bpf_net_private:file    { getattr read };
 neverallow { domain -bpfloader                                                              -network_stack -system_server                             } fs_bpf_net_shared:file     { getattr read };
 neverallow { domain -bpfloader                                      -netd                   -network_stack -system_server                             } fs_bpf_netd_readonly:file  { getattr read };
-neverallow { domain -bpfloader                                      -netd -netutils_wrapper -network_stack -system_server                             } fs_bpf_netd_shared:file    { getattr read };
+neverallow { domain -bpfloader                                      -netd -netutils_wrapper -network_stack -system_server -aohp_container_daemon } fs_bpf_netd_shared:file    { getattr read };
 neverallow { domain -bpfloader                                                              -network_stack                                            } fs_bpf_tethering:file      { getattr read };
 neverallow { domain -bpfloader                                                                                                           -uprobestats } fs_bpf_uprobestats:file   { getattr read };
 neverallow { domain -bpfloader -gpuservice -lmkd                    -netd -netutils_wrapper -network_stack -system_server -traced_probes -uprobestats } { bpffs_type -fs_bpf_vendor }:file write;

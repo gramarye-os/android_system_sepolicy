@@ -122,8 +122,9 @@ neverallow netd fs_bpf_netd_readonly:file write;
 
 # T+: Only the bpfloader, netd, netutils_wrapper, network_stack and system_server should ever touch 'fs_bpf_netd_shared' programs/maps.
 # netutils_wrapper requires access to be able to run iptables and only needs readonly access
-neverallow { domain -bpfloader -netd -netutils_wrapper -network_stack -system_server } fs_bpf_netd_shared:dir ~getattr;
-neverallow { domain -bpfloader -netd -netutils_wrapper -network_stack -system_server } fs_bpf_netd_shared:file *;
+# (AOHP: aohp_container_daemon runs iptables for container bridges, see netd.te)
+neverallow { domain -bpfloader -netd -netutils_wrapper -network_stack -system_server -aohp_container_daemon } fs_bpf_netd_shared:dir ~getattr;
+neverallow { domain -bpfloader -netd -netutils_wrapper -network_stack -system_server -aohp_container_daemon } fs_bpf_netd_shared:file *;
 neverallow netutils_wrapper fs_bpf_netd_shared:file write;
 
 # S+: Only the bpfloader and the network_stack should ever touch 'fs_bpf_tethering' programs/maps.
