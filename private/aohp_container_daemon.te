@@ -388,9 +388,8 @@ dontaudit aohp_container_daemon block_device:dir search;
 # starts with CAP_SETFCAP dropped from its bounding set) and which is neverallowed for all domains.
 allow aohp_container_daemon tmpfs:lnk_file { create read getattr unlink };
 allow aohp_container_daemon proc_keys:file mounton;
-# sys_ptrace is neverallowed in user namespaces too (domain.te); the read of a sibling's /proc
-# entry that triggers it is non-essential, so it is silenced instead.
-dontaudit aohp_container_daemon self:cap_userns sys_ptrace;
+# cap_userns sys_ptrace was silenced here as non-essential until round 15, which grants it (see the
+# end of this file).
 dontaudit aohp_container_daemon self:capability setfcap;
 
 # Round 5 (cred28, 2026-11-09): crun masks /proc/timer_list and /proc/sysrq-trigger in the
@@ -502,3 +501,14 @@ allow aohp_container_daemon udmabuf_device:chr_file getattr;
 #    Permission denied"). Not exercised under enforcing yet; the mount point is a tmpfs directory.
 allow aohp_container_daemon fuse_device:chr_file rw_file_perms;
 allow aohp_container_daemon fuse:filesystem { mount unmount };
+
+# Round 15 (Flatpak portals in a dodge env, cred47 enforcing, 2026-11-14). xdg-desktop-portal answers a
+# sandboxed app only after identifying it: it opens /proc/<pid>/root of the caller (the app's
+# xdg-dbus-proxy, which bubblewrap put in a user namespace) to read .flatpak-info. For a same-uid
+# target in a child user namespace ptrace_may_access needs CAP_SYS_PTRACE over that namespace, which
+# its owner has, and SELinux checks it as cap_userns sys_ptrace. Without it openat() returns EACCES
+# for every bwrap child and each portal call fails with "Portal operation not allowed: Unable to open
+# /proc/<pid>/root" (file chooser, settings, open-URI). private/domain.te neverallows sys_ptrace; the
+# container daemon is exempted there for cap_userns only. Host-level capability sys_ptrace stays
+# denied (see the note above the GPU block).
+allow aohp_container_daemon self:cap_userns sys_ptrace;

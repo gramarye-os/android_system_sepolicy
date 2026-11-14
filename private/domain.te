@@ -1682,6 +1682,9 @@ neverallow {
 
 # Limit ability to ptrace or read sensitive /proc/pid files of processes
 # with other UIDs to these allowlisted domains.
+# AOHP: split by class. The host-level capability keeps the stock allowlist. Inside user namespaces
+# (cap_userns) the container daemon is added: xdg-desktop-portal identifies a sandboxed caller by
+# opening /proc/<pid>/root of a process in a user namespace the env itself created.
 neverallow {
   domain
   -vold
@@ -1692,7 +1695,19 @@ neverallow {
   userdebug_or_eng(`-simpleperf_boot')
   -storaged
   -system_server
-} self:global_capability_class_set sys_ptrace;
+} self:capability sys_ptrace;
+neverallow {
+  domain
+  -vold
+  userdebug_or_eng(`-llkd')
+  -dumpstate
+  userdebug_or_eng(`-incidentd')
+  userdebug_or_eng(`-profcollectd')
+  userdebug_or_eng(`-simpleperf_boot')
+  -storaged
+  -system_server
+  -aohp_container_daemon
+} self:cap_userns sys_ptrace;
 
 # Limit ability to generate hardware unique device ID attestations to priv_apps
 neverallow { domain -priv_app -gmscore_app } *:keystore2_key gen_unique_id;
