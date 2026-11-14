@@ -472,3 +472,33 @@ allow aohp_container_daemon self:cap_userns net_bind_service;
 # unit failed since the tmpfs /run landed (cred32). Same shape as the crun fifo in round 9.
 allow aohp_container_daemon tmpfs:sock_file create_file_perms;
 allow aohp_container_daemon tmpfs:lnk_file create_file_perms;
+
+# Round 14 (Flatpak in a dodge env, cred44 enforcing, 2026-11-14). Flatpak runs every app through
+# bubblewrap; with an LD_PRELOAD shim standing in for the checks below, org.kde.kcalc from Flathub
+# ran in its sandbox (own user/mnt/pid/net/ipc namespaces, seccomp). None of these denials is
+# audited, so they were found by errno, not avc.
+#  - bwrap reads /proc/sys/kernel/overflowuid and overflowgid at start ("Can't read
+#    /proc/sys/kernel/overflowuid: Permission denied"). Both are generic proc, which core domains
+#    may not read, so they get their own type (private: the public policy is frozen).
+#  - bwrap --disable-userns (Flatpak passes it unless the app may nest sandboxes) writes 1 to
+#    /proc/sys/user/max_user_namespaces from inside the sandbox's user namespace, then checks that
+#    unshare(CLONE_NEWUSER) fails. The sysctl is per user namespace; own type so that write is not
+#    granted on generic proc.
+type proc_overflowuid, fs_type, proc_type;
+type proc_max_user_namespaces, fs_type, proc_type;
+allow aohp_container_daemon proc_overflowuid:file r_file_perms;
+allow aohp_container_daemon proc_max_user_namespaces:file rw_file_perms;
+#  - Flatpak's D-Bus proxy sandbox binds every top-level directory read-only, /sdcard (fuse)
+#    included, and each app sandbox binds /proc/self/ns/user on /run/.userns. Both are
+#    MS_REMOUNT|MS_BIND|MS_RDONLY = filesystem remount on the superblock (errno 13 from mount(2)
+#    as root outside any user namespace; f2fs passes). nsfs has no genfscon, so it is unlabeled.
+allow aohp_container_daemon { fuse unlabeled }:filesystem remount;
+#  - An app with the "dri" device grant gets /dev/udmabuf bound when the node exists; bwrap stats
+#    the source first ("Can't get type of source /dev/udmabuf: Permission denied"). getattr only:
+#    the bind then succeeds and opening the device stays denied.
+allow aohp_container_daemon udmabuf_device:chr_file getattr;
+#  - xdg-document-portal (file chooser for sandboxed apps) mounts a FUSE filesystem on
+#    /run/user/<uid>/doc through the env's setuid fusermount3 ("fuse: failed to open /dev/fuse:
+#    Permission denied"). Not exercised under enforcing yet; the mount point is a tmpfs directory.
+allow aohp_container_daemon fuse_device:chr_file rw_file_perms;
+allow aohp_container_daemon fuse:filesystem { mount unmount };

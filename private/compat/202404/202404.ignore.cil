@@ -7,6 +7,8 @@
   ( new_objects
     aohp_container_daemon
     proc_cap_last_cap
+    proc_overflowuid
+    proc_max_user_namespaces
     app_function_service
     binderfs_logs_transaction_history
     binderfs_logs_transactions
