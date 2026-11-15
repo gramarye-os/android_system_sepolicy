@@ -512,3 +512,19 @@ allow aohp_container_daemon fuse:filesystem { mount unmount };
 # container daemon is exempted there for cap_userns only. Host-level capability sys_ptrace stays
 # denied (see the note above the GPU block).
 allow aohp_container_daemon self:cap_userns sys_ptrace;
+
+# Round 16 (Bluetooth sockets, dodge cred49 enforcing, 2026-11-15). Wireshark in an env listed no
+# interface at all, as root too: libpcap looks for Bluetooth controllers while it lists devices,
+# with socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI) and HCIGETDEVLIST, and takes any failure but
+# "no such address family" as fatal, so one denial hid wlan0 and every other interface
+# ("dumpcap: Can't get list of interfaces: Can't open raw Bluetooth socket: Permission denied";
+# avc: denied { create } for comm="dumpcap" scontext=tcontext=u:r:aohp_container_daemon:s0
+# tclass=bluetooth_socket). With the socket refused by a preloaded stub instead, dumpcap -D listed
+# all 33 devices: nothing else is in the way.
+# It is also what a Bluetooth stack in an env (BlueZ: bluetoothctl, btmon, RFCOMM and L2CAP servers,
+# hence listen/accept) talks to the kernel through, for debugging gadgets from there. No xperm rule
+# names this class, so ioctl covers the HCI ioctls. What the kernel lets a holder do is still
+# decided by CAP_NET_RAW and CAP_NET_ADMIN, which the daemon has (round 2). This grants sockets
+# only: no device node of the phone's own radio (hci_attach_dev, vendor_bt_device), which Android's
+# Bluetooth HAL drives from user space, so on dodge the kernel has no controller unless one is added.
+allow aohp_container_daemon self:bluetooth_socket create_stream_socket_perms;
