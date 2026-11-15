@@ -522,9 +522,21 @@ allow aohp_container_daemon self:cap_userns sys_ptrace;
 # tclass=bluetooth_socket). With the socket refused by a preloaded stub instead, dumpcap -D listed
 # all 33 devices: nothing else is in the way.
 # It is also what a Bluetooth stack in an env (BlueZ: bluetoothctl, btmon, RFCOMM and L2CAP servers,
-# hence listen/accept) talks to the kernel through, for debugging gadgets from there. No xperm rule
-# names this class, so ioctl covers the HCI ioctls. What the kernel lets a holder do is still
-# decided by CAP_NET_RAW and CAP_NET_ADMIN, which the daemon has (round 2). This grants sockets
+# hence listen/accept) talks to the kernel through, for debugging gadgets from there. Socket ioctls
+# must be allowlisted (private/domain.te neverallowxperm ... ioctl { 0 }; a bare ioctl grant failed
+# the cred50 build there): the list below is what the kernel's Bluetooth sockets implement, the
+# HCI and RFCOMM requests by name, HIDPCONNADD by number (public/ioctl_defines has no name for it;
+# the other HIDP requests share their numbers with HCIDEVUP, HCIGETDEVLIST and HCIGETDEVINFO), and
+# the queue and timestamp queries every Bluetooth socket answers. What the kernel lets a holder do is
+# still decided by CAP_NET_RAW and CAP_NET_ADMIN, which the daemon has (round 2). This grants sockets
 # only: no device node of the phone's own radio (hci_attach_dev, vendor_bt_device), which Android's
 # Bluetooth HAL drives from user space, so on dodge the kernel has no controller unless one is added.
 allow aohp_container_daemon self:bluetooth_socket create_stream_socket_perms;
+allowxperm aohp_container_daemon self:bluetooth_socket ioctl {
+  HCIDEVUP HCIDEVDOWN HCIDEVRESET HCIDEVRESTAT HCIGETDEVLIST HCIGETDEVINFO HCIGETCONNLIST
+  HCIGETCONNINFO HCIGETAUTHINFO HCISETRAW HCISETSCAN HCISETAUTH HCISETENCRYPT HCISETPTYPE
+  HCISETLINKPOL HCISETLINKMODE HCISETACLMTU HCISETSCOMTU HCIBLOCKADDR HCIUNBLOCKADDR HCIINQUIRY
+  RFCOMMCREATEDEV RFCOMMRELEASEDEV RFCOMMGETDEVLIST RFCOMMGETDEVINFO RFCOMMSTEALDLC
+  0x400448c8
+  TIOCOUTQ FIONREAD SIOCGSTAMP SIOCGSTAMPNS FIOCLEX FIONCLEX
+};
