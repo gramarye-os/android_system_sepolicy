@@ -540,3 +540,17 @@ allowxperm aohp_container_daemon self:bluetooth_socket ioctl {
   0x400448c8
   TIOCOUTQ FIONREAD SIOCGSTAMP SIOCGSTAMPNS FIOCLEX FIONCLEX
 };
+
+# Round 17 (USB webcam, dodge cred50 enforcing, 2026-11-15). An env has the phone's /dev, so a UVC
+# camera plugged into the dock is there the moment the kernel makes its nodes (OBSBOT Tiny on an
+# Anker dock: /dev/video2, /dev/video3 and /dev/media3, crw-rw---- system:camera,
+# u:object_r:video_device:s0), and root in the env could not open them, with the camera group or
+# without (EACCES). V4L2 is ioctls and mmap on the node: rw_file_perms.
+# Every V4L2 and media node carries this one label, the phone's own cameras and codecs among them:
+# the label can't tell a plugged-in camera from a built-in one. The nodes' mode still does its
+# part: an app's user in an env opens none of them until it is given the camera group.
+# Programs find cameras by listing /sys/class/video4linux (OBS, v4l2-ctl), a plain sysfs
+# directory of links, which the domain could search and not read.
+allow aohp_container_daemon video_device:chr_file rw_file_perms;
+allow aohp_container_daemon sysfs:dir r_dir_perms;
+allow aohp_container_daemon sysfs:lnk_file r_file_perms;
