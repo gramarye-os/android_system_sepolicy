@@ -155,7 +155,12 @@ full_treble_only(`
     -ueventd
     is_flag_enabled(RELEASE_AVF_ENABLE_DEVICE_ASSIGNMENT, `-vfio_handler')
     -vold
+    -aohp_container_daemon
   } sysfs:file no_rw_file_perms;
+  # AOHP: an env is a Linux system, and its programs read /sys as a matter of course (libpci,
+  # V4L2 tools). The container daemon's domain may read these files and nothing more: no write,
+  # and no mmap, which is how a device's memory regions (resourceN) would be reached.
+  neverallow aohp_container_daemon sysfs:file ~{ getattr open read };
 
   # /dev
   neverallow {

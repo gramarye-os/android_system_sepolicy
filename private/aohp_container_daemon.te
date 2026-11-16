@@ -184,9 +184,9 @@ allowxperm aohp_container_daemon aohp_container_data_file:file ioctl {
 allow aohp_container_daemon sysfs_dm:dir search;
 allow aohp_container_daemon sysfs_dm:file r_file_perms;
 
-# NOT granted: generic sysfs:file read (openclaw-gatewa reading an unlabeled sysfs "model" once per
-# gateway start). private/coredomain.te:142 neverallows coredomain access to unlabeled sysfs files
-# (full_treble_only); the file would need its own label in file_contexts first. Harmless, 1/boot.
+# Generic sysfs:file read was not granted here (openclaw-gateway reading an unlabeled sysfs "model"
+# once per gateway start): private/coredomain.te neverallows coredomain access to unlabeled sysfs
+# files (full_treble_only). Granted since round 18, at the end of this file, read only.
 
 # NOT granted: self:capability sys_ptrace (pgrep -f on a host pid, 4 denials). private/domain.te
 # neverallows sys_ptrace for every domain outside a fixed allowlist (vold, dumpstate, storaged,
@@ -554,3 +554,13 @@ allowxperm aohp_container_daemon self:bluetooth_socket ioctl {
 allow aohp_container_daemon video_device:chr_file rw_file_perms;
 allow aohp_container_daemon sysfs:dir r_dir_perms;
 allow aohp_container_daemon sysfs:lnk_file r_file_perms;
+
+# Round 18 (unlabeled /sys files, dodge cred51 enforcing, 2026-11-16). Most of /sys carries the
+# generic sysfs label, and the domain could list it and not read a file in it. Linux programs
+# read /sys freely and some take a refusal badly: libpci exits its caller when it can't read a
+# PCI device's "vendor", which cost Chromium its GPU process (three exits, then no GPU); OBS and
+# v4l2-ctl were refused a device's "dev" file.
+# Read only, and without map: the files are world-readable by mode, but root in an env could
+# otherwise mmap a device's root-only resourceN (the Wi-Fi chip's registers). The neverallow in
+# private/coredomain.te keeps it to these three permissions.
+allow aohp_container_daemon sysfs:file { getattr open read };
