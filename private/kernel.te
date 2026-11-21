@@ -45,6 +45,15 @@ allow kernel gsid:fd use;
 
 allow kernel self:global_capability_class_set sys_nice;
 
+# AOHP: kdevtmpfs. With CONFIG_DEVTMPFS=y the kernel keeps its own copy of the device nodes in
+# devtmpfs, for Linux containers that mount it (Droidspaces-style hardware access). Android does not
+# mount it. Without these the thread is denied as soon as the policy is loaded, so devtmpfs only
+# holds the devices that existed before that and every later device logs a denial.
+allow kernel self:global_capability_class_set mknod;
+allow kernel device:dir { create_dir_perms };
+allow kernel device:chr_file { create setattr unlink getattr };
+allow kernel device:blk_file { create setattr unlink getattr };
+
 # Root fs.
 r_dir_file(kernel, rootfs)
 
