@@ -564,3 +564,10 @@ allow aohp_container_daemon sysfs:lnk_file r_file_perms;
 # otherwise mmap a device's root-only resourceN (the Wi-Fi chip's registers). The neverallow in
 # private/coredomain.te keeps it to these three permissions.
 allow aohp_container_daemon sysfs:file { getattr open read };
+# devtmpfs (CONFIG_DEVTMPFS in the device kernels, 2026-11-20). Its superblock and every node
+# in it are labeled "device" (fs_use_trans devtmpfs). "mount -t devtmpfs" in an env failed with
+# avc { mount } tclass=filesystem; a permissive run on ingot showed mount, unmount and getattr
+# on the nodes. Opening the nodes stays denied: domain.te neverallows open/read/write on
+# device:chr_file for every domain.
+allow aohp_container_daemon device:filesystem { mount unmount getattr };
+allow aohp_container_daemon device:{ chr_file blk_file } getattr;
