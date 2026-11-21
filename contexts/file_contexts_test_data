@@ -312,6 +312,7 @@
 /system/lib64/bootstrap/test                                      system_bootstrap_lib_file
 /system/bin/mm_events                                             mm_events_exec
 /system/bin/aohp-containerd                                       aohp_container_daemon_exec
+/system/bin/droidspaces                                           droidspacesd_exec
 /system/bin/atrace                                                atrace_exec
 /system/bin/auditctl                                              auditctl_exec
 /system/bin/bcc                                                   rs_exec
