@@ -1,0 +1,34 @@
+# Droidspaces (github.com/ravindu644/Droidspaces-OSS): a container runtime that runs beside
+# aohp-containerd. Its daemon is /system/bin/droidspaces, started by init when
+# persist.aohp.droidspaces=1 (vendor/aohp/prebuilt/droidspaces/droidspaces.rc).
+#
+# The domain is permissive, as upstream ships it: the daemon and every process of its
+# containers run here, and upstream states an enforcing domain is not achievable. A
+# permissive domain is only allowed on userdebug and eng builds; on a user build the domain
+# has no rules and the service does not work.
+#
+# What is written out below are the rules where another, enforcing domain acts on this one.
+# On the 2026-11-20 trial the daemon ran in the su domain, which gets these from su.te.
+type droidspacesd, domain, coredomain;
+type droidspacesd_exec, exec_type, file_type, system_file_type;
+
+userdebug_or_eng(`permissive droidspacesd;')
+
+init_daemon_domain(droidspacesd)
+
+# "cmd device_config" and "dumpsys deviceidle" at container start and stop: binder calls into
+# system_server, with the caller's stdout handed over.
+binder_use(droidspacesd)
+binder_call(droidspacesd, system_server)
+binder_call(system_server, droidspacesd)
+allow system_server droidspacesd:fd use;
+allow system_server droidspacesd:fifo_file { write getattr };
+
+# Loop devices backing an image rootfs hold a file opened by the daemon.
+allow kernel droidspacesd:fd use;
+
+# Control path for the agent in an AOHP env: the droidspaces CLI there talks to the daemon
+# on the abstract socket @droidspaces (the env shares the host network and PID namespaces,
+# which is what the daemon checks; it also wants uid 0).
+allow aohp_container_daemon droidspacesd:unix_stream_socket { connectto getattr getopt read write shutdown };
+allow aohp_container_daemon droidspacesd:fd use;

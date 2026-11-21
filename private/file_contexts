@@ -279,6 +279,7 @@
 /system/bin/zygote_next	u:object_r:zygote_next_exec:s0
 /system/bin/servicemanager	u:object_r:servicemanager_exec:s0
 /system/bin/aohp-containerd	u:object_r:aohp_container_daemon_exec:s0
+/system/bin/droidspaces	u:object_r:droidspacesd_exec:s0
 /system/bin/surfaceflinger	u:object_r:surfaceflinger_exec:s0
 /system/bin/gpuservice	u:object_r:gpuservice_exec:s0
 /system/bin/bufferhubd	u:object_r:bufferhubd_exec:s0
