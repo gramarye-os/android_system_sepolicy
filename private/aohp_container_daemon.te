@@ -650,3 +650,19 @@ allowxperm aohp_container_daemon self:file ioctl { TCGETS TIOCGWINSZ };
 # neverallow keeps it to that plus the stat and mount-over of round 11: no write, no mmap.
 # Files with a type of their own are not touched by this.
 allow aohp_container_daemon proc:file { getattr open read };
+
+# Round 21 (first run of rounds 19 and 20 on a device: dodge ds4 enforcing, 2026-11-23). With them a
+# Debian 13 container had journald, networkd (with its lease), ssh, the three mount units and the
+# console getty running. Three things were left:
+#  - logind listens for device events: socket(AF_NETLINK, NETLINK_KOBJECT_UEVENT) was refused
+#    ("Failed to create udev watchers", exit 1). With that socket faked by a preload shim it ran
+#    ("New seat seat0") and the container reached the state "running".
+allow aohp_container_daemon self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
+#  - Droidspaces binds the pty slave it allocated over the container's /dev/console, which is the
+#    console node and keeps that label ("Failed to bind mount console"). stat and mount-over only:
+#    the kernel console itself is not opened.
+allow aohp_container_daemon console_device:chr_file { getattr mounton };
+#  - isatty() on a generic proc file: systemd asked 6,566 times in one boot on /proc/devices alone
+#    and got EACCES where ENOTTY is the answer. private/domain.te already limits which ioctls a
+#    domain may use on such files (FIOCLEX, FIONCLEX, TCGETS); the permission itself was missing.
+allow aohp_container_daemon proc:file ioctl;

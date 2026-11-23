@@ -149,10 +149,12 @@ full_treble_only(`
   } proc:file no_rw_file_perms;
   # AOHP: an env is a Linux system and its programs read /proc/sys and /proc as a matter of
   # course (systemd and the C library). The domain of the container daemon may read these files
-  # and may stat and mount over them to mask one in a container. No write and no mmap.
+  # and may stat and mount over them to mask one in a container. No write and no mmap. The
+  # ioctl permission is for isatty (TCGETS) and private/domain.te holds it to that.
   # (No apostrophe or comma-after-apostrophe in comments here: this is inside an m4 macro call
   # and a stray quote silently drops the rest of the block from the policy.)
-  neverallow aohp_container_daemon proc:file ~{ getattr open read mounton };
+  neverallow aohp_container_daemon proc:file ~{ getattr open read mounton ioctl };
+  neverallowxperm aohp_container_daemon proc:file ioctl ~{ FIOCLEX FIONCLEX TCGETS };
 
   # /sys
   neverallow {
