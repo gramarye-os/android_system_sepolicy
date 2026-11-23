@@ -673,3 +673,14 @@ allow aohp_container_daemon devpts:dir r_dir_perms;
 #    and got EACCES where ENOTTY is the answer. private/domain.te already limits which ioctls a
 #    domain may use on such files (FIOCLEX, FIONCLEX, TCGETS); the permission itself was missing.
 allow aohp_container_daemon proc:file ioctl;
+
+# Round 23 (the container console is a pty now: dodge ds6 enforcing, 2026-11-23). With the console
+# bind of round 21 in place, /dev/console in a container is the pty Droidspaces allocated, label
+# devpts, and console-getty.service failed there ("Failed to set up standard input: Permission
+# denied", exit 208/STDIN, five restarts, then the container state is "degraded"). Before a unit
+# gets a terminal as its standard input, systemd locks it (flock), watches it with inotify until
+# it is free and resets it; on a pty the two console-mode ioctls of that reset are answered with
+# ENOTTY by the kernel, once they are let through. Round 9 gave open, read, write, ioctl, getattr
+# and setattr on a pty; these are the remaining ones a login on a pty uses.
+allow aohp_container_daemon devpts:chr_file { lock watch watch_reads };
+allowxperm aohp_container_daemon devpts:chr_file ioctl { KDSETMODE KDSKBMODE };
