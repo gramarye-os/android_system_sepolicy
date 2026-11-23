@@ -658,10 +658,17 @@ allow aohp_container_daemon proc:file { getattr open read };
 #    ("Failed to create udev watchers", exit 1). With that socket faked by a preload shim it ran
 #    ("New seat seat0") and the container reached the state "running".
 allow aohp_container_daemon self:netlink_kobject_uevent_socket create_socket_perms_no_ioctl;
-#  - Droidspaces binds the pty slave it allocated over the container's /dev/console, which is the
-#    console node and keeps that label ("Failed to bind mount console"). stat and mount-over only:
-#    the kernel console itself is not opened.
-allow aohp_container_daemon console_device:chr_file { getattr mounton };
+#  - Droidspaces binds the pty slave it allocated over the container's /dev/console ("Failed to
+#    bind mount console"). That node is one it made itself with mknod on the container's /dev
+#    tmpfs, so its label is tmpfs (the type transition of round 8 covers files and directories
+#    only), and mount-over was the one permission missing there. Corrected on ds5, 2026-11-23:
+#    this item first named console_device, read off an audit line that belonged to the env's own
+#    /dev/console; that rule did nothing and is gone. Reproduced in an env: on a tmpfs, a bind
+#    over a plain file works and a bind over a mknod'ed character node is refused.
+allow aohp_container_daemon tmpfs:chr_file mounton;
+#  - Listing /dev/pts (ls, and programs that look a terminal up by name) was refused in the
+#    container; search was already allowed to every domain.
+allow aohp_container_daemon devpts:dir r_dir_perms;
 #  - isatty() on a generic proc file: systemd asked 6,566 times in one boot on /proc/devices alone
 #    and got EACCES where ENOTTY is the answer. private/domain.te already limits which ioctls a
 #    domain may use on such files (FIOCLEX, FIONCLEX, TCGETS); the permission itself was missing.
