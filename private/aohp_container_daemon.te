@@ -625,17 +625,7 @@ allowxperm aohp_container_daemon devpts:chr_file ioctl {
 allow aohp_container_daemon sysfs_net:dir { r_dir_perms mounton };
 allow aohp_container_daemon sysfs_net:file w_file_perms;
 allow aohp_container_daemon proc_net_type:dir r_dir_perms;
-#  - Reads systemd makes for every unit. /proc/pressure/* decides whether it watches memory
-#    pressure. The limits and /proc/devices are generic proc, which core domains may not read, so
-#    they get their own types (private: the public policy is frozen): without them it guesses
-#    the task and file limits and cannot resolve device names for a unit's device list, and
-#    ngroups_max, which the C library reads for every login, was most of the audit log.
-#    No Android-side program in the device trees names these files (checked 2026-11-22).
-#    /proc/sys/kernel/osrelease is left alone on purpose: vendor scripts and libraries read it
-#    (init.qcom.post_boot.sh, libperfconfig.so), and systemd only uses it to look for WSL.
-type proc_kernel_limits, fs_type, proc_type;
-type proc_devices, fs_type, proc_type;
-allow aohp_container_daemon { proc_kernel_limits proc_devices }:file r_file_perms;
+#  - /proc/pressure/*: systemd reads them to decide whether it watches memory pressure.
 allow aohp_container_daemon { proc_pressure_cpu proc_pressure_io proc_pressure_mem }:file r_file_perms;
 #  - isatty() on a /proc/<pid> file of the domain's own: private/domain.te lets a domain use only
 #    FIOCLEX/FIONCLEX there, so the answer was EACCES instead of ENOTTY, 1,300 times in one
@@ -646,3 +636,17 @@ allowxperm aohp_container_daemon self:file ioctl { TCGETS TIOCGWINSZ };
 # (Droidspaces' "Android optimizations"), the switch to the droidspacesd domain the binary tries
 # on itself, stat of Android mount points and of /dev/vndbinder, /dev/dri and the dma heaps,
 # and writes to pid_max, core_pattern, file-max and nr_open (systemd-sysctl; host-wide values).
+
+# Round 20 (unlabeled /proc files, 2026-11-22). The /proc counterpart of round 18. Most of
+# /proc/sys and a good part of /proc itself carry the generic proc type, which core domains may
+# not read (the neverallow in private/coredomain.te, there to keep Android's own programs on
+# labeled kernel interfaces). In an env 266 such files were unreadable. systemd reads several for
+# every unit (/proc/devices to resolve a unit's device list, threads-max, nr_open and file-max for
+# its limits, osrelease), the C library reads ngroups_max for every login, which was most of the
+# audit log, and other programs want the inotify, semaphore and pty limits. Giving each file a
+# type of its own was tried first (round 19 as first written) and dropped: it never ends, and a
+# new label takes the file away from vendor programs that read it today (osrelease:
+# init.qcom.post_boot.sh, libperfconfig.so). So this domain reads generic proc files, and the
+# neverallow keeps it to that plus the stat and mount-over of round 11: no write, no mmap.
+# Files with a type of their own are not touched by this.
+allow aohp_container_daemon proc:file { getattr open read };

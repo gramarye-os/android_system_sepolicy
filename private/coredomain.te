@@ -145,7 +145,12 @@ full_treble_only(`
     coredomain
     -init
     -vold
+    -aohp_container_daemon
   } proc:file no_rw_file_perms;
+  # AOHP: an env is a Linux system, and its programs read /proc/sys and /proc as a matter of
+  # course (systemd, the C library). The container daemon's domain may read these files, and
+  # stat and mount over them to mask one in a container; no write and no mmap.
+  neverallow aohp_container_daemon proc:file ~{ getattr open read mounton };
 
   # /sys
   neverallow {
