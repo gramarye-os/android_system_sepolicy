@@ -147,9 +147,11 @@ full_treble_only(`
     -vold
     -aohp_container_daemon
   } proc:file no_rw_file_perms;
-  # AOHP: an env is a Linux system, and its programs read /proc/sys and /proc as a matter of
-  # course (systemd, the C library). The container daemon's domain may read these files, and
-  # stat and mount over them to mask one in a container; no write and no mmap.
+  # AOHP: an env is a Linux system and its programs read /proc/sys and /proc as a matter of
+  # course (systemd and the C library). The domain of the container daemon may read these files
+  # and may stat and mount over them to mask one in a container. No write and no mmap.
+  # (No apostrophe or comma-after-apostrophe in comments here: this is inside an m4 macro call
+  # and a stray quote silently drops the rest of the block from the policy.)
   neverallow aohp_container_daemon proc:file ~{ getattr open read mounton };
 
   # /sys
@@ -162,9 +164,9 @@ full_treble_only(`
     -vold
     -aohp_container_daemon
   } sysfs:file no_rw_file_perms;
-  # AOHP: an env is a Linux system, and its programs read /sys as a matter of course (libpci,
-  # V4L2 tools). The container daemon's domain may read these files and nothing more: no write,
-  # and no mmap, which is how a device's memory regions (resourceN) would be reached.
+  # AOHP: an env is a Linux system and its programs read /sys as a matter of course (libpci and
+  # V4L2 tools). The domain of the container daemon may read these files and nothing more: no
+  # write and no mmap. mmap is how the memory regions of a device (resourceN) would be reached.
   neverallow aohp_container_daemon sysfs:file ~{ getattr open read };
 
   # /dev
@@ -173,8 +175,14 @@ full_treble_only(`
     -apexd
     -fsck
     -init
+    -kernel
     -ueventd
   } device:{ blk_file file } no_rw_file_perms;
+  # AOHP: with CONFIG_DEVTMPFS the kernel thread kdevtmpfs makes and removes the nodes in devtmpfs
+  # (private/kernel.te). It may create and remove block nodes there and nothing more: no open and
+  # no read or write of a node and no plain files.
+  neverallow kernel device:blk_file ~{ create setattr unlink getattr };
+  neverallow kernel device:file no_rw_file_perms;
 
   # debugfs
   neverallow {
