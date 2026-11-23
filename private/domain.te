@@ -2285,7 +2285,11 @@ neverallow {
   -traced_perf
   userdebug_or_eng(`-profcollectd')
   userdebug_or_eng(`-simpleperf_boot')
+  -aohp_container_daemon
 } proc_kallsyms:file *;
+# AOHP: systemd in a container hides /proc/kallsyms from a sandboxed unit (ProtectKernelTunables=)
+# by mounting an unreadable file over it: fstat, then mount. Nothing else, and no open or read.
+neverallow aohp_container_daemon proc_kallsyms:file ~{ getattr mounton };
 
 # debugfs_kcov type is not included in this neverallow statement since the KCOV
 # tool uses it for kernel fuzzing.

@@ -31,6 +31,7 @@ genfscon proc /net/udp u:object_r:proc_net_tcp_udp:s0
 genfscon proc /net/xt_qtaguid/ctrl u:object_r:proc_qtaguid_ctrl:s0
 genfscon proc /net/xt_qtaguid/ u:object_r:proc_qtaguid_stat:s0
 genfscon proc /cpuinfo u:object_r:proc_cpuinfo:s0
+genfscon proc /devices u:object_r:proc_devices:s0
 genfscon proc /pagetypeinfo u:object_r:proc_pagetypeinfo:s0
 genfscon proc /pressure/cpu u:object_r:proc_pressure_cpu:s0
 genfscon proc /pressure/io u:object_r:proc_pressure_io:s0
@@ -42,6 +43,8 @@ genfscon proc /swaps u:object_r:proc_swaps:s0
 genfscon proc /sysrq-trigger u:object_r:proc_sysrq:s0
 genfscon proc /kpageflags u:object_r:proc_kpageflags:s0
 genfscon proc /sys/abi/swp u:object_r:proc_abi:s0
+genfscon proc /sys/fs/file-max u:object_r:proc_kernel_limits:s0
+genfscon proc /sys/fs/nr_open u:object_r:proc_kernel_limits:s0
 genfscon proc /sys/fs/pipe-max-size u:object_r:proc_pipe_conf:s0
 genfscon proc /sys/fs/protected_hardlinks u:object_r:proc_security:s0
 genfscon proc /sys/fs/protected_symlinks u:object_r:proc_security:s0
@@ -58,6 +61,7 @@ genfscon proc /sys/kernel/hung_task_ u:object_r:proc_hung_task:s0
 genfscon proc /sys/kernel/kptr_restrict u:object_r:proc_security:s0
 genfscon proc /sys/kernel/modprobe u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/modules_disabled u:object_r:proc_security:s0
+genfscon proc /sys/kernel/ngroups_max u:object_r:proc_kernel_limits:s0
 genfscon proc /sys/kernel/overflowgid u:object_r:proc_overflowuid:s0
 genfscon proc /sys/kernel/overflowuid u:object_r:proc_overflowuid:s0
 genfscon proc /sys/kernel/panic_on_oops u:object_r:proc_panic:s0
@@ -66,6 +70,7 @@ genfscon proc /sys/kernel/perf_event_paranoid u:object_r:proc_perf:s0
 genfscon proc /sys/kernel/perf_cpu_time_max_percent u:object_r:proc_perf:s0
 genfscon proc /sys/kernel/perf_event_mlock_kb u:object_r:proc_perf:s0
 genfscon proc /sys/kernel/pid_max u:object_r:proc_pid_max:s0
+genfscon proc /sys/kernel/threads-max u:object_r:proc_kernel_limits:s0
 genfscon proc /sysvipc u:object_r:proc_sysvipc:s0
 genfscon proc /sys/kernel/poweroff_cmd u:object_r:usermodehelper:s0
 genfscon proc /sys/kernel/random u:object_r:proc_random:s0

@@ -571,3 +571,78 @@ allow aohp_container_daemon sysfs:file { getattr open read };
 # device:chr_file for every domain.
 allow aohp_container_daemon device:filesystem { mount unmount getattr };
 allow aohp_container_daemon device:{ chr_file blk_file } getattr;
+
+# Round 19 (systemd containers under a Droidspaces daemon the env runs itself, dodge ds2 enforcing,
+# 2026-11-22). A HostExec unit in an env runs the env's own copy of the droidspaces binary as the
+# daemon, so the daemon and every container it starts are in this domain. A Debian 13 container
+# (systemd 257) booted, with NAT and the GPU, but came up degraded: journald, logind, networkd and
+# three mount units failed. Found with strace -f -Z on the daemon through a container start (the
+# audit log loses lines at that rate) and checked with a preload shim standing in for the refused
+# reads; no capability had to be added.
+#  - Unit sandboxes. ProtectKernelLogs= and ProtectKernelTunables= hide /proc/kmsg and
+#    /proc/kallsyms by mounting an unreadable file over them: fstat, then mount. Neither was
+#    allowed, so each such unit ended with status 226 (networkd, logind, journald). Only stat and
+#    mount-over are granted; the neverallow in private/domain.te keeps kallsyms to those two.
+#    ProtectHostname= does the same read-only over /proc/sys/kernel/hostname and domainname;
+#    journald opens hostname to watch for changes and exits without it; Droidspaces binds both
+#    over themselves to keep them writable in the container (its own UTS namespace).
+allow aohp_container_daemon { proc_kmsg proc_kallsyms }:file { getattr mounton };
+allow aohp_container_daemon proc_hostname:file { rw_file_perms mounton };
+#  - Droidspaces binds its own uptime and loadavg files over the container's.
+allow aohp_container_daemon { proc_uptime proc_loadavg }:file mounton;
+#  - A sandboxed unit gets a /proc and /dev of its own and unmounts what it was given below them;
+#    systemd runs its generators with everything read-only, the bound binder nodes included.
+allow aohp_container_daemon { proc sysfs devpts mqueue binderfs }:filesystem unmount;
+allow aohp_container_daemon binderfs:filesystem remount;
+#  - Keyrings. systemd gives each unit a session keyring holding its invocation ID (add_key,
+#    KEYCTL_SETPERM), and for a mount unit links root's user keyring into it so mount helpers
+#    find their keys; when that link is refused the unit ends with status 237 (dev-mqueue.mount,
+#    run-lock.mount, sys-fs-fuse-connections.mount). A keyring carries its creator's label:
+#    the new session keyring this domain's, root's user keyring the kernel's (made before init
+#    has its own domain; every domain may already search it, private/domain.te).
+allow aohp_container_daemon self:key { create write search read view link setattr };
+allow aohp_container_daemon kernel:key link;
+#  - sys-fs-fuse-connections.mount mounts fusectl in the container. Its files stay closed
+#    (neverallow in private/domain.te).
+allow aohp_container_daemon fusectlfs:filesystem { mount unmount remount };
+allow aohp_container_daemon fusectlfs:dir r_dir_perms;
+#  - The container console and "droidspaces enter". Droidspaces opens the ptmx node of the
+#    container's own devpts instance, which is labeled devpts like the slaves, and for that label
+#    private/domain.te lists the ioctls any domain may use (unpriv_tty_ioctls): unlocking the
+#    slave and asking for its number or descriptor were refused ("Failed to allocate console
+#    PTY", then EPERM on /dev/console for every unit). The rest of the list is what a login
+#    session on a pty uses (session and hangup handling, packet mode, queue size, drain and flow
+#    control, the termios2 calls newer C libraries use); TIOCGPTPEER by number, ioctl_defines
+#    has no name for it. TIOCSTI stays neverallowed, and no line discipline can be loaded.
+allowxperm aohp_container_daemon devpts:chr_file ioctl {
+  TIOCGPTN TIOCSPTLCK TIOCGPTLCK 0x5441
+  TIOCNOTTY TIOCGSID TIOCVHANGUP TIOCEXCL TIOCNXCL TIOCGEXCL TIOCPKT TIOCGPKT TIOCSIG TIOCGDEV
+  TIOCGETD TIOCMGET FIONREAD TCSBRK TCSBRKP TCXONC TCGETS2 TCSETS2 TCSETSW2 TCSETSF2
+};
+#  - Container networking. Droidspaces lists /sys/class/net and binds /sys/devices/virtual/net
+#    into the container's own /sys, spreads the veth's receive load (rps_cpus) and lists
+#    /proc/sys/net/ipv6/conf. The domain already configures interfaces (NET_ADMIN, round 2).
+allow aohp_container_daemon sysfs_net:dir { r_dir_perms mounton };
+allow aohp_container_daemon sysfs_net:file w_file_perms;
+allow aohp_container_daemon proc_net_type:dir r_dir_perms;
+#  - Reads systemd makes for every unit. /proc/pressure/* decides whether it watches memory
+#    pressure. The limits and /proc/devices are generic proc, which core domains may not read, so
+#    they get their own types (private: the public policy is frozen): without them it guesses
+#    the task and file limits and cannot resolve device names for a unit's device list, and
+#    ngroups_max, which the C library reads for every login, was most of the audit log.
+#    No Android-side program in the device trees names these files (checked 2026-11-22).
+#    /proc/sys/kernel/osrelease is left alone on purpose: vendor scripts and libraries read it
+#    (init.qcom.post_boot.sh, libperfconfig.so), and systemd only uses it to look for WSL.
+type proc_kernel_limits, fs_type, proc_type;
+type proc_devices, fs_type, proc_type;
+allow aohp_container_daemon { proc_kernel_limits proc_devices }:file r_file_perms;
+allow aohp_container_daemon { proc_pressure_cpu proc_pressure_io proc_pressure_mem }:file r_file_perms;
+#  - isatty() on a /proc/<pid> file of the domain's own: private/domain.te lets a domain use only
+#    FIOCLEX/FIONCLEX there, so the answer was EACCES instead of ENOTTY, 1,300 times in one
+#    container start.
+allowxperm aohp_container_daemon self:file ioctl { TCGETS TIOCGWINSZ };
+# Still refused, and not needed: capability sys_ptrace (Droidspaces and journald look at
+# /proc/<pid>/root and exe of other users' processes), the device_config and deviceidle services
+# (Droidspaces' "Android optimizations"), the switch to the droidspacesd domain the binary tries
+# on itself, stat of Android mount points and of /dev/vndbinder, /dev/dri and the dma heaps,
+# and writes to pid_max, core_pattern, file-max and nr_open (systemd-sysctl; host-wide values).
